@@ -1,0 +1,10 @@
+MOV R1,1
+loop:
+MOV R0, 21  // Required since RO gets the value of 0 each time LE is executed
+MOV R16, R1
+PORT P1, R16
+OUT
+INR R1
+LE R0, R1
+JZ R0, loop
+HALT
