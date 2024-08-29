@@ -1,0 +1,16 @@
+int main()
+{
+decl
+    int temp,num;
+enddecl
+begin
+    num = 1;
+    while ( num <= 100 ) do
+         temp = exposcall ("Write",-2,num);   // Odd numbers to be printed
+         num = num + 1;
+         breakpoint;                          // Even numbers to be debugged
+         num = num + 1;
+    endwhile;
+    return 0;
+end
+}

@@ -1,0 +1,38 @@
+decl
+   int n, fib (int n);
+enddecl
+
+int fib (int n) {
+   decl 
+      int res;
+   enddecl
+   begin
+      if (n == 0) then
+           res = 0;
+      else
+         if (n == 1) then
+             res = 1;
+         else
+             res = fib (n-1) + fib (n-2);
+         endif;
+      endif;
+      return res;
+   end
+}
+
+int main () {
+   decl 
+      int result, num, temp, curr;
+   enddecl
+   
+   begin
+   num = 1;
+   while ( num <= 5 ) do
+         curr = fib (num);
+         temp = exposcall ("Write",-2,curr);
+         num = num + 1;
+    endwhile;
+    return 0;
+    end
+}
+
