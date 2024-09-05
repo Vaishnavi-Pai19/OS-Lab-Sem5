@@ -1,0 +1,35 @@
+PUSH BP          // Storing original BP
+MOV BP, SP       // BP will now start storing value of SP
+
+MOV R1, 6
+MOV R0, BP
+SUB R0, R1        
+MOV R0, [R0]    // Value at SP - 6 will contain function code
+MOV R1, "Write" 
+EQ R1, R0       // Checking whether the request is for a console write
+JZ R1, 56       // Returns if it is not a Write function
+
+MOV R0, 5       // Pushing system call number 5 for write
+PUSH R0
+MOV R0, -2      // Pushing arg 1 which is file descriptor -2 for write
+PUSH R0
+
+MOV R0, BP
+MOV R1, 4
+SUB R0, R1
+MOV R0, [R0]   // Value at SP - 4 ie. arg 2 will have the word to be printed
+PUSH R0
+PUSH R0        // Pushing register for R3
+PUSH R0        // Pushing empty space for the return value
+
+INT 7
+
+POP R0         // Popping return value
+POP R0         // Arg 3
+POP R0         // Arg 2
+POP R0         // Arg 1
+POP R0         // System Call Number
+POP R1         // Register that stored the original BP
+MOV BP, R1
+RET
+

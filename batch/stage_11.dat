@@ -1,5 +1,5 @@
 load --os $HOME/myexpos/spl/spl_progs/os_startup_10.xsm
-load --init $HOME/myexpos/expl/samples/numbers.xsm
+load --init $HOME/myexpos/expl/samples/oddnos.xsm
 load --int=timer $HOME/myexpos/spl/spl_progs/timer_assg9.xsm
 load --int=7 ../spl/spl_progs/sample_int7.xsm
 load --int=10 ../spl/spl_progs/haltprog.xsm

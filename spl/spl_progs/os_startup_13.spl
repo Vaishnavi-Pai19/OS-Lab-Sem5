@@ -1,0 +1,63 @@
+// Loading module 7 = boot module
+loadi (54, 67);
+loadi (55, 68);
+
+// Loading idle process from disk
+loadi (69, 11);
+loadi (70, 12);
+
+// Library
+loadi (63, 13);
+loadi (64, 14);
+
+SP = 82*512 - 1;     // Stack for calling the boot module
+
+call BOOT_MODULE;
+
+// Setting up IDLE process
+
+PTBR = PAGE_TABLE_BASE;
+PTLR = 10;
+
+// Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+// Heap (It doesn't use)
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+// Code
+[PTBR+8] = 69;
+[PTBR+9] = "0100";
+[PTBR+10] = 70;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+// Stack
+[PTBR+16] = 81;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+// Process Table + Status System Table for IDLE process
+[PROCESS_TABLE + 1] = 0;               // PID of IDLE
+[PROCESS_TABLE + 4] = RUNNING;         // Here, IDLE is scheduled first
+[PROCESS_TABLE + 11] = 82;             // User Area Page for IDLE
+[PROCESS_TABLE + 12] = 0;              // KPTR
+[PROCESS_TABLE + 13] = 8*512;          // UPTR
+[PROCESS_TABLE + 14] = PTBR;
+[PROCESS_TABLE + 15] = PTLR;
+
+[SYSTEM_STATUS_TABLE + 1] = 0;
+[81*512] = [69*512 + 1];               // Entry pointer ie. setting IP to the top of stack
+SP = 8*512;
+
+ireturn;

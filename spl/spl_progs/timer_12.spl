@@ -1,0 +1,52 @@
+// Switching from user stack to kernel stack
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+backup;
+
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+// Process table entry location found by adding currentPID*16 to base address
+alias pt_entry R1;
+pt_entry = PROCESS_TABLE + currentPID*16;
+
+// Setting state, KPTR, PTBR and PTLR
+[pt_entry + 4] = READY;
+[pt_entry + 12] = SP % 512;   // Instead of actual value, saving the offset
+[pt_entry + 14] = PTBR;
+[pt_entry + 15] = PTLR;
+
+alias newPID R2;
+if (currentPID == 0) then
+    newPID = 1;
+else
+    newPID = 0;
+endif;
+
+// Restoring SP, PTBR and PTLR from PT for new process
+alias new_pt R3;
+new_pt = PROCESS_TABLE + newPID*16;
+
+// Setting back KTPR, PTBR and PTLR
+SP = [new_pt + 11] * 512 + [new_pt + 12];    // Calculating using offset
+PTBR = [new_pt + 14];
+PTLR = [new_pt + 15];
+[SYSTEM_STATUS_TABLE + 1] = newPID;
+
+if ([new_pt + 4] == CREATED) then
+    [new_pt + 4] = RUNNING;
+    SP = [new_pt + 13];
+    ireturn;
+endif;
+
+[new_pt + 4] = RUNNING;
+restore;
+
+// Setting SP to the User SP saved in process table
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+breakpoint;
+
+ireturn;
