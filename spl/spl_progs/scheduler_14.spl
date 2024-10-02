@@ -1,0 +1,50 @@
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+multipush(BP);
+
+alias pt_entry R1;
+pt_entry = PROCESS_TABLE + currentPID * 16;
+
+[pt_entry + 12] = SP % 512;         // Kernel stack pointer
+[pt_entry + 14] = PTBR;
+[pt_entry + 15] = PTLR;
+
+alias newPID R2;
+alias new_pt R3;
+alias i R4;
+newPID = 0;         // Initially just idle process
+i = ([SYSTEM_STATUS_TABLE+1] + 1) % 16;         // Current ID + 1
+
+while (i<16) do
+     pt_entry = PROCESS_TABLE + i*16;
+     if (([pt_entry+4] == READY) || ([pt_entry + 4] == CREATED)) then
+        newPID = i;
+        break;
+     endif;
+     i = (i+1) % 16;
+endwhile;
+
+new_pt = PROCESS_TABLE + newPID*16;
+
+alias user_page R5;
+alias kptr R6;
+user_page = [new_pt + 11];
+kptr = [new_pt + 12];
+
+SP = user_page * 512 + kptr;
+PTBR = [new_pt + 14];
+PTLR = [new_pt + 15];
+
+[SYSTEM_STATUS_TABLE + 1] = newPID;
+ 
+if ([new_pt + 4] == CREATED) then
+   SP = [new_pt + 13];
+   [new_pt + 4] = RUNNING;    // State of process as RUNNING
+   [new_pt + 9] = 0;          // MODE flag to 0
+   ireturn;
+endif;
+
+[new_pt + 4] = RUNNING;
+multipop(BP);
+return;

@@ -1,0 +1,22 @@
+// Setting the STATE of the invoking process to TERMINATED
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 4] = TERMINATED;
+
+alias pid R0;
+pid = 1;
+
+alias check R1;
+check = 1;
+
+while (pid <= 15) do
+   if ( [PROCESS_TABLE + pid*16 + 4] != TERMINATED) then
+      check = 0;
+      break;
+   endif;
+   pid = pid + 1;    
+endwhile;
+
+if (check == 1) then
+   halt;
+endif;
+
+call SCHEDULER;

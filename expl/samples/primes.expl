@@ -1,0 +1,43 @@
+decl
+   int prime (int num);
+enddecl
+
+int prime (int num)
+{
+decl
+   int flag, fac;
+enddecl
+begin
+   fac = 2;
+   flag = 1;           // flag = 1 if prime, flag = 0 if not prime
+   if ((num == 1) OR (num == 0)) then
+      flag = 0;
+   endif;
+   while (fac < num) do
+      if ((num % fac) == 0) then
+         flag = 0;
+         break;
+      endif;
+      fac = fac + 1;
+   endwhile;
+   return flag;
+end
+}
+   
+int main ()
+{
+decl
+   int n, check;
+enddecl
+begin
+   n = 1;
+   while (n < 100) do
+      check = prime (n);
+      if (check == 1) then
+         check = exposcall ("Write", -2, n);
+      endif;
+      n = n+1;
+   endwhile;
+   return 0;
+end
+}
