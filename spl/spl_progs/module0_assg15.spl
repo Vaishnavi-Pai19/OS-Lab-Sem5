@@ -1,0 +1,41 @@
+alias functionNum R1;
+alias currentPID R2;
+
+//-------------------- Acquire Terminal - 8 ---------------------------//
+
+if (functionNum == 8) then
+   while ([TERMINAL_STATUS_TABLE] == 1) do                       // Terminal not free
+      [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
+      multipush (R1, R2);
+      call MOD_5;
+      multipop (R1, R2);
+   endwhile;
+
+   [TERMINAL_STATUS_TABLE] = 1;
+   [TERMINAL_STATUS_TABLE + 1] = currentPID;
+   breakpoint;
+   return;
+endif;
+
+//-------------------- Release Terminal - 9 ----------------------------//
+
+if (functionNum == 9) then
+   if (currentPID != [TERMINAL_STATUS_TABLE+1]) then         // Process trying to release terminal without acquiring it
+      R0 = -1;         // Return value as unsuccessful
+      breakpoint;   
+      return;
+   else
+      [TERMINAL_STATUS_TABLE] = 0;
+      alias i R3;
+      i = 1;
+      while (i <= 15) do
+         if ([PROCESS_TABLE + i*16 + 4] == WAIT_TERMINAL) then
+            [PROCESS_TABLE + i*16 + 4] = READY;
+         endif;
+         i = i+1;
+      endwhile;        // Return value successful
+      R0 = 0;
+      breakpoint;
+      return;
+   endif;
+endif;

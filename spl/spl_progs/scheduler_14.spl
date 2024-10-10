@@ -39,7 +39,7 @@ PTLR = [new_pt + 15];
 [SYSTEM_STATUS_TABLE + 1] = newPID;
  
 if ([new_pt + 4] == CREATED) then
-   SP = [new_pt + 13];
+   SP = [new_pt + 13];        // SP value overwritten by UPTR of new process
    [new_pt + 4] = RUNNING;    // State of process as RUNNING
    [new_pt + 9] = 0;          // MODE flag to 0
    ireturn;

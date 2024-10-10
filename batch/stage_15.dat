@@ -1,0 +1,13 @@
+load --init $HOME/myexpos/expl/samples/oddnos.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer_14.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup_14.xsm
+load --int=10 ../spl/spl_progs/int10_14.xsm
+load --exhandler ../spl/spl_progs/haltprog.xsm
+load --library ../expl/library.lib
+load --int=7 ../spl/spl_progs/int7_15.xsm
+load --idle ../expl/samples/idle_12.xsm
+load --module 7 ../spl/spl_progs/boot_module_15.xsm
+load --module 5 ../spl/spl_progs/scheduler_14.xsm
+load --module 0 ../spl/spl_progs/module0_15.xsm
+load --module 4 ../spl/spl_progs/module4_15.xsm
+exit
