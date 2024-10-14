@@ -32,7 +32,8 @@ begin
        endwhile;
        i = i+1;
    endwhile;
-
+   
+   temp = exposcall ("Write", -2, "Sorted:");
    i = 0;
    while (i < n) do
       temp = exposcall ("Write", -2, arr[i]);
@@ -40,5 +41,4 @@ begin
    endwhile;
    return 0;
 end
-} 
-			
+}			
