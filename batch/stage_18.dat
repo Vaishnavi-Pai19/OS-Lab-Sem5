@@ -1,0 +1,21 @@
+load --library ../expl/library.lib
+load --exhandler ../spl/spl_progs/haltprog.xsm
+load --idle ../expl/samples/idle_12.xsm
+load --int=7 ../spl/spl_progs/int7_15.xsm
+load --int=10 ../spl/spl_progs/int10_14.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer_14.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup_14.xsm
+load --int=6 ../spl/spl_progs/int6_16.xsm
+load --int=9 ../spl/spl_progs/stage_18/int9_18.xsm
+load --module 0 ../spl/spl_progs/stage_18/module0_18.xsm
+load --module 1 ../spl/spl_progs/module1_17.xsm
+load --module 2 ../spl/spl_progs/stage_18/module2_18.xsm
+load --module 4 ../spl/spl_progs/stage_18/module4_18.xsm
+load --module 5 ../spl/spl_progs/scheduler_14.xsm
+load --module 7 ../spl/spl_progs/stage_18/boot_module_18.xsm
+load --int=console ../spl/spl_progs/console_16.xsm
+load --int=disk ../spl/spl_progs/stage_18/disk_18.xsm
+load --init ../expl/expl_progs/shell_v1.xsm
+load --exec ../expl/expl_progs/odd.xsm
+load --exec ../expl/expl_progs/gcd.xsm
+load --exec ../expl/expl_progs/fives.xsm

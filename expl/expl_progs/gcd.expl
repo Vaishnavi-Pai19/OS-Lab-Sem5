@@ -1,0 +1,33 @@
+decl
+int gcd (int x, int y);
+enddecl
+
+int gcd (int x, int y)
+{
+   decl
+      int fac;
+   enddecl
+   begin
+      if (x == 0) then
+         fac = y;
+      else
+         fac = gcd (y%x, x);
+      endif;
+      return fac;
+   end
+}
+
+int main()
+{
+   decl
+      int a, b, c, temp;
+   enddecl
+   begin
+      temp = exposcall ("Read", -1, a);
+      temp = exposcall ("Read", -1, b);
+      temp = exposcall ("Write", -2, "The GCD is: ");
+      c = gcd (a,b);
+      temp = exposcall ("Write", -2, c);
+      return 0;
+   end
+}

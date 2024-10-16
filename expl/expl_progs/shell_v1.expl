@@ -5,7 +5,7 @@ int main() {
     enddecl
     
     begin
-        temp = exposcall("Write", -2, "Filename:");
+        temp = exposcall("Write", -2, "Type filename:");
         temp = exposcall("Read", -1, input);
         temp = exposcall("Exec", input);
         return 0;

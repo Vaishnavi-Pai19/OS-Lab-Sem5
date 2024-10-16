@@ -1,0 +1,52 @@
+// Get Free Page + Release Page
+// Only difference from last stage is removing breakpoints
+
+alias functionNum R1;
+alias pageNum R2;         // The page number to be released
+
+// ----------------------------------------- Get Free Page ---------------------------------------------------------- //
+if (functionNum == 1) then
+   [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;   // Incrementing WAIT_MEM_COUNT
+   while ([SYSTEM_STATUS_TABLE + 2] == 0) do                    // While memory is full
+      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 4] = WAIT_MEM;
+      multipush (R1, R2);
+      call SCHEDULER;
+      multipop (R1, R2);
+   endwhile;
+
+   [SYSTEM_STATUS_TABLE+2] = [SYSTEM_STATUS_TABLE+2] - 1;       // Decrementing WAIT_MEM_COUNT
+   [SYSTEM_STATUS_TABLE+3] = [SYSTEM_STATUS_TABLE+3] - 1;       // Decrementing MEM_FREE_COUNT
+
+   // Finding a free page using memory free list
+   alias i R3;
+   i = 0;
+   while (i < 128) do
+      if ([MEMORY_FREE_LIST+i] == 0) then
+         [MEMORY_FREE_LIST] = 1;
+         break;
+      endif;
+      i = i+1;
+   endwhile;
+   R0 = i;          // Storing obtained page number in R0 as return value
+   // print R0;     // always prints 65
+     return;
+endif;
+
+// --------------------------------------- Release Page --------------------------------------------------------------- //
+if (functionNum == 2) then
+   [MEMORY_FREE_LIST + pageNum] = [MEMORY_FREE_LIST + pageNum] - 1;
+   if ([MEMORY_FREE_LIST + pageNum] == 0) then
+      [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1;        // Incrementing the number of free pages
+   endif;
+
+   alias i R3;
+   i = 0;
+   while(i < 16) do
+      if([PROCESS_TABLE + i*16 + 4] == WAIT_MEM) then                   // Converting all current waiting processes to ready
+         [PROCESS_TABLE + i*16 + 4] = READY;
+      endif;
+      i = i + 1;
+   endwhile;
+   return;
+endif;
+
