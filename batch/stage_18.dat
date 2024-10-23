@@ -19,3 +19,4 @@ load --init ../expl/expl_progs/shell_v1.xsm
 load --exec ../expl/expl_progs/odd.xsm
 load --exec ../expl/expl_progs/gcd.xsm
 load --exec ../expl/expl_progs/fives.xsm
+load --exec ../expl/samples/primes.xsm

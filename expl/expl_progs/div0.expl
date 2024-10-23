@@ -1,0 +1,11 @@
+int main()
+{
+   decl
+      int temp, num;
+   enddecl
+   begin
+         num = 4;
+         temp = num/0;
+      return 0;
+   end
+}
