@@ -1,0 +1,21 @@
+load --library ../expl/library.lib
+load --exhandler ../spl/spl_progs/stage_19/exhandler_19.xsm
+load --idle ../expl/samples/idle_12.xsm
+load --int=7 ../spl/spl_progs/int7_15.xsm
+load --int=8 ../spl/spl_progs/stage_20/int8_20.xsm
+load --int=10 ../spl/spl_progs/stage_20/int10_20.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer_14.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup_14.xsm
+load --int=6 ../spl/spl_progs/int6_16.xsm
+load --int=9 ../spl/spl_progs/stage_19/int9_19.xsm
+load --module 0 ../spl/spl_progs/stage_18/module0_18.xsm
+load --module 1 ../spl/spl_progs/stage_20/module1_20.xsm
+load --module 2 ../spl/spl_progs/stage_19/module2_19.xsm
+load --module 4 ../spl/spl_progs/stage_19/module4_19.xsm
+load --module 5 ../spl/spl_progs/stage_20/scheduler_20.xsm
+load --module 7 ../spl/spl_progs/stage_20/boot_module_20.xsm
+load --int=console ../spl/spl_progs/console_16.xsm
+load --int=disk ../spl/spl_progs/stage_19/disk_19.xsm
+load --init ../expl/expl_progs/stage_20/shell_v2.xsm
+load --exec ../expl/expl_progs/stage_20/even.xsm
+load --exec ../expl/expl_progs/stage_20/odd.xsm
