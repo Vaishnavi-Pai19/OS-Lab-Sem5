@@ -1,0 +1,83 @@
+alias userSP R1;
+alias sysCall R2;
+alias pTable R3;
+pTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+
+userSP = SP;
+[pTable + 13] = userSP;
+SP = [pTable + 11]*512 - 1;
+PTBR = [pTable + 14];
+
+sysCall = [[PTBR + 2*((userSP-5)/512)] * 512 + ((userSP-5)%512)];
+[pTable + 9] = sysCall;
+
+// --------------------------------- Getpid (11) --------------------------------------- //
+if (sysCall == 11) then
+   [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = [pTable + 1];       // Returning the PID of current process
+   
+   [pTable + 9] = 0;       // Setting mode back to user
+   SP = userSP;
+   ireturn;
+endif;
+   
+// --------------------------------- Getppid (12) -------------------------------------- //
+if (sysCall == 12) then
+   [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = [pTable + 2];       // Returning the PPID of current process
+   
+   [pTable + 9] = 0;          // Setting mode back to user
+   SP = userSP;
+   ireturn;
+endif;
+
+// --------------------------------- Wait (13) ----------------------------------------- //
+if (sysCall == 13) then
+   [pTable + 9] = 13;         // Changing MODE flag
+   alias waitPid R4;          // Extracting PID from user stack
+   waitPid = [[PTBR + 2*((userSP-4)/512)]*512 + (userSP-4)%512];
+
+   // Process can't wait for itself or a TERMINATED process, and the pid has to be valid
+   if (waitPid == [SYSTEM_STATUS_TABLE + 1] || [PROCESS_TABLE + waitPid*16 + 4] == TERMINATED || waitPid < 0 || waitPid >= 16) then
+      [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -1;     // Returning to user mode indicating failure
+      [pTable + 9] = 0;
+      SP = userSP;
+      ireturn;
+   endif;
+
+   // STATE is a two-tuple (WAIT_PROCESS, WAIT_PID); current process waits for process with waitPid
+   [pTable + 4] = WAIT_PROCESS;
+   [pTable + 5] = waitPid;
+
+   multipush (R0, R1, R2, R3, R4);
+   call SCHEDULER;
+   multipop (R0, R1, R2, R3, R4);
+
+   // Continuing execution after wait is over
+   [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = 0;     // Returning to user mode indicating success
+   [pTable + 9] = 0;          // Resetting MODE flag
+   SP = userSP;
+   ireturn;
+endif;
+
+// --------------------------------- Signal (14) --------------------------------------- //
+if (sysCall == 14) then       // Signal has no arguments
+   [pTable + 9] = 14;         // Changing MODE flag
+
+   // Looping through all process table entries to find any that are waiting for the current process
+   alias currPid R4;
+   currPid = [SYSTEM_STATUS_TABLE + 1];
+   alias i R5;
+   i = 0;
+   while (i < 16) do
+      if ([PROCESS_TABLE + i*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + i*16 + 5] == currPid) then
+         [PROCESS_TABLE + i*16 + 4] = READY;
+         [PROCESS_TABLE + i*16 + 5] = -1;
+      endif;
+      i = i + 1;
+   endwhile;
+
+   [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = 0;     // Returning to user mode indicating success
+   [pTable + 9] = 0;          // Resetting MODE flag
+   SP = userSP;
+   ireturn;
+endif;
+   

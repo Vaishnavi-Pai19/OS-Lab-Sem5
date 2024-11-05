@@ -115,13 +115,13 @@ multipop (R0, R1, R2, R3, R4, R5, R6, R7, PTBR);
 // Initializing disk map table
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 0] = -1;
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 1] = -1;
-[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 2] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 2] = -1;                                          // 2 for Heap
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 3] = -1;
-[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 4] = [INODE_TABLE + (inodeIndex * 16) + 8 + 0];
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 4] = [INODE_TABLE + (inodeIndex * 16) + 8 + 0];   // 4 for Code
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 5] = [INODE_TABLE + (inodeIndex * 16) + 8 + 1];
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 6] = [INODE_TABLE + (inodeIndex * 16) + 8 + 2];
-[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 7] = [INODE_TABLE + (inodeIndex * 16) + 8 + 3];
-[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 8] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 7] = [INODE_TABLE + (inodeIndex * 16) + 8 + 3]; 
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 8] = -1;                                          // 2 for Stack
 [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + 9] = -1;
 
 // Storing entry point IP to top of user stack

@@ -11,6 +11,8 @@ int main ()
       if (pid == 0) then            /* child process */
          temp = exposcall ("Write", -2, "Child proc");
          temp = exposcall ("Exec", "odd.xsm");
+         temp = exposcall ("Exit");
+         temp = exposcall ("Exec", "odd.xsm");
       else                          /* parent process */
          temp = exposcall ("Write", -2, "Parent proc");
          temp = exposcall ("Exec", "even.xsm");
