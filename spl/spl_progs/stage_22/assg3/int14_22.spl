@@ -1,0 +1,83 @@
+[SYSTEM_STATUS_TABLE + 7]=[SYSTEM_STATUS_TABLE + 7]+1;
+alias userSP R1;
+userSP = SP;
+
+// Switching to kernel stack
+alias pTable R2;
+pTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+[pTable + 13] = userSP;
+SP = [pTable + 11]*512 - 1;
+
+// Extracting system call no. from user stack
+alias sysCallNum R3;
+sysCallNum = [[PTBR + 2*((userSP-5)/512)]*512 + (userSP-5)%512];
+[pTable + 9] = sysCallNum;
+
+// -------------------------------------------- SemLock - Syscall no. 19 ------------------------------------------------------------------- //
+if (sysCallNum == 19) then
+   // Extracting semaphore descriptor 
+   alias semDesc R4;
+   semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP-4)%512];
+
+   // Checking if semDesc is invalid 
+   if (semDesc < 0 || semDesc > 7 || [[pTable + 11]*512 + RESOURCE_TABLE_OFFSET + 2*semDesc] != 1) then
+      [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = -1;      // Returning -1 to indicate failure
+   else
+      alias semID R5;
+      semID = [[pTable + 11]*512 + RESOURCE_TABLE_OFFSET + semDesc*2 + 1];
+      // For semaphores locked by process other than current process, changing state of process and calling SCHEDULER
+      while(([SEMAPHORE_TABLE + semID*4] != -1)  && ([SEMAPHORE_TABLE + semID*4] != [SYSTEM_STATUS_TABLE + 1])) do
+         [pTable + 4] = WAIT_SEMAPHORE;
+         [pTable + 5] = semID;              // Process for which the current process is waiting for
+         multipush(R1, R2, R3, R4, R5);
+         call SCHEDULER;
+         multipop (R1, R2, R3, R4, R5);
+      endwhile;
+
+      // Continues with the rest of the code once semaphore becomes free
+      [SEMAPHORE_TABLE + semID*4] = [SYSTEM_STATUS_TABLE + 1];       // Locking PID
+      [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = 0;        // Returning success
+      // Goes back to user mode
+   endif;
+endif;
+
+// -------------------------------------------- SemUnLock - Syscall no. 20 ------------------------------------------------------------------- //
+if (sysCallNum == 20) then
+   // Extracting semaphore descriptor (SEMID)
+   alias semDesc R4;
+   semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP-4)%512];
+
+   // Checking if SEMID is invalid 
+   if (semDesc < 0 || semDesc > 7 || [[pTable + 11]*512 + RESOURCE_TABLE_OFFSET + 2*semDesc] != 1) then
+      [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = -1;      // Returning -1 to indicate failure
+   else
+      alias semID R5;
+      semID = [[pTable + 11]*512 + RESOURCE_TABLE_OFFSET + semDesc*2 + 1];
+      if ([SEMAPHORE_TABLE + semID*4] != -1) then                           // Semaphore is locked
+         if ([SEMAPHORE_TABLE + semID*4] != [SYSTEM_STATUS_TABLE+1]) then   // Semaphore is not locked by current process
+            [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = -2;        // Semaphore locked by other process, returning failure    
+         else
+            [SEMAPHORE_TABLE + semID*4] = -1;                        // Unlocking
+            
+            // Looping through process table and changing STATE of all processes waiting on the locked semaphore
+            alias i R6;
+            i = 0;
+            while(i < 16) do
+               if([PROCESS_TABLE + i*16 + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + i*16 + 5] == semID) then
+                  [PROCESS_TABLE + i*16 + 4] = READY;
+                  [PROCESS_TABLE + i*16 + 5] = -1;
+               endif;
+               i = i+1;
+            endwhile;
+         endif;
+      endif;
+   endif;
+   
+   [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = 0;        // Returning success
+   // Goes back to user mode
+endif;
+
+// Switching back to user stack and returning to user mode
+[pTable + 9] = 0;
+SP = [pTable + 13];
+ireturn;

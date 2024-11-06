@@ -7,7 +7,7 @@ enddecl
 begin
    x = 1;
    while (x == 1) do
-      temp = exposcall ("Write", -2, "Enter com");
+      temp = exposcall ("Write", -2, "--Enter--");
       temp = exposcall ("Read", -1, command);
       if (command != "Shutdown") then
          pid = exposcall ("Fork");
