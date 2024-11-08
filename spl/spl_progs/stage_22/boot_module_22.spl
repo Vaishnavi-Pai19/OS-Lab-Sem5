@@ -31,8 +31,8 @@ loadi (18, 31);
 loadi (19, 32);
 
 // INT 9 
-loadi (20,33);
-loadi (21,34);
+loadi (20, 33);
+loadi (21, 34);
 
 // INT 10
 loadi (22, 35);
@@ -53,6 +53,9 @@ loadi (31, 44);
 // INT 15 
 loadi (32, 45);
 loadi (33, 46);
+
+// Root file
+loadi (62, 5);
 
 // INIT process
 loadi (65, 7);

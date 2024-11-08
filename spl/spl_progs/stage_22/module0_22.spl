@@ -25,6 +25,10 @@ if (functionNum == 6) then
       i = i+1;
    endwhile;
 
+   // print "semind";
+   // print i;
+   // breakpoint;
+
    if (i == MAX_SEM_COUNT) then
       R0 = -1;             // Returning -1 to indicate failure
    else
@@ -32,6 +36,7 @@ if (functionNum == 6) then
       [SEMAPHORE_TABLE + i*4 + 1] = 1;         // Process Count
       R0 = i;
    endif;
+   return;
 endif;
 
 //--------------------------------- Release Semaphore - 7 -----------------------------//
@@ -54,6 +59,7 @@ if (functionNum == 7) then
       // Decrementing the Process Count of the semaphore
       [SEMAPHORE_TABLE + semInd*4 + 1] = [SEMAPHORE_TABLE + semInd*4 + 1] - 1;
    endif;
+   return;
 endif;
 
 //--------------------------------- Acquire Terminal - 8 ------------------------------//

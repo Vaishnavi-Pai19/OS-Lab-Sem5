@@ -11,12 +11,24 @@ pt_entry = PROCESS_TABLE + currentPID * 16;
 [pt_entry + 15] = PTLR;
 
 alias newPID R2;
-newPID = currentPID + 1;         
-
-while ([PROCESS_TABLE + (newPID)*16 + 4] != CREATED && [PROCESS_TABLE + (newPID*16) + 4] != READY && newPID < 16) do
-    newPID = newPID + 1;
-endwhile;
+newPID = currentPID + 1;
 newPID = newPID % 16;
+while(newPID != currentPID) do
+	if(newPID!=0) then
+		if([PROCESS_TABLE + newPID*16 + 4] == READY)  then
+			break;
+		endif;
+        if([PROCESS_TABLE + newPID*16 + 4] == CREATED)  then
+            break;
+        endif;
+	endif;
+	newPID = newPID + 1;
+	newPID = newPID % 16;
+endwhile;
+
+if(newPID == currentPID) then
+	newPID = 0;        // Idle
+endif;
 
 alias new_pt R3;
 new_pt = PROCESS_TABLE + newPID*16;
@@ -34,7 +46,7 @@ PTLR = [new_pt + 15];
 [SYSTEM_STATUS_TABLE + 1] = newPID;
  
 if ([new_pt + 4] == CREATED) then
-   SP = [new_pt + 13];        // SP value overwritten by UPTR of new process
+   SP = [new_pt + 13];        // SP value overwritten by UPTR of new process (Top of user stack)
    BP = [[new_pt + 11]*512];  // BP value set to beginning to user area page 
    [new_pt + 4] = RUNNING;    // State of process as RUNNING
    [new_pt + 9] = 0;          // MODE flag to 0

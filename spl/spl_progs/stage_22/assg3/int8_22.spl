@@ -45,6 +45,7 @@ else
     multipush(R0, R1, R2, R3, R4); 
     // Get free page called twice
     R1 = 1;
+    // print "from here";
     call MEMORY_MANAGER;
     [newPTBR + 16] = R0;
     [newPTBR + 17] = "0110";

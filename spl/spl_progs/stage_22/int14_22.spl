@@ -17,7 +17,7 @@ if (sysCallNum == 19) then
    // Extracting semaphore descriptor 
    alias semDesc R4;
    semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP-4)%512];
-
+   
    // Checking if semDesc is invalid 
    if (semDesc < 0 || semDesc > 7 || [[pTable + 11]*512 + RESOURCE_TABLE_OFFSET + 2*semDesc] != 1) then
       [[PTBR + ((userSP-1)/512)*2]*512 + (userSP-1)%512] = -1;      // Returning -1 to indicate failure
@@ -28,6 +28,10 @@ if (sysCallNum == 19) then
       while(([SEMAPHORE_TABLE + semID*4] != -1)  && ([SEMAPHORE_TABLE + semID*4] != [SYSTEM_STATUS_TABLE + 1])) do
          [pTable + 4] = WAIT_SEMAPHORE;
          [pTable + 5] = semID;              // Process for which the current process is waiting for
+         print [SYSTEM_STATUS_TABLE+1];
+         print semID;
+         print "pcb_check";
+         breakpoint;
          multipush(R1, R2, R3, R4, R5);
          call SCHEDULER;
          multipop (R1, R2, R3, R4, R5);

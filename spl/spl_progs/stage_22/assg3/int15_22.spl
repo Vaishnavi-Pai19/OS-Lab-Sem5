@@ -1,0 +1,7 @@
+print "mem acc";
+print [SYSTEM_STATUS_TABLE + 6];
+print "ker sw";
+print [SYSTEM_STATUS_TABLE + 7] + 1;
+print "context sw";
+print [TERMINAL_STATUS_TABLE + 2];
+halt;

@@ -1,0 +1,198 @@
+// Library code
+loadi (63, 13);
+loadi (64, 14);
+
+// Exception handler
+loadi (2, 15);
+loadi (3, 16);
+
+// Timer interrupt
+loadi (4, 17);
+loadi (5, 18);
+
+// Disk interrupt
+loadi (6, 19);
+loadi (7, 20);
+
+// Console interrupt
+loadi (8, 21);
+loadi (9, 22);
+
+// INT 6
+loadi (14, 27);
+loadi (15, 28);
+
+// INT 7
+loadi (16, 29);
+loadi (17, 30);
+
+// INT 8 
+loadi (18, 31);
+loadi (19, 32);
+
+// INT 9 
+loadi (20,33);
+loadi (21,34);
+
+// INT 10
+loadi (22, 35);
+loadi (23, 36);
+
+// INT 11 
+loadi (24, 37);
+loadi (25, 38);
+
+// INT 13 **
+loadi (28, 41);
+loadi (29, 42);
+
+// INT 14 **
+loadi (30, 43);
+loadi (31, 44);
+
+// INT 15 
+loadi (32, 45);
+loadi (33, 46);
+
+// INIT process
+loadi (65, 7);
+loadi (66, 8);
+
+// MODULE 0 - Resource manager
+loadi (40, 53);
+loadi (41, 54);
+
+// MODULE 1 - Process manager 
+loadi (42, 55);
+loadi (43, 56);
+
+// MODULE 2 - Memory manager 
+loadi (44, 57);
+loadi (45, 58);
+
+// MODULE 4 - Device manager
+loadi (48, 61);
+loadi (49, 62);
+
+// MODULE 5 - Scheduler
+loadi (50, 63);
+loadi (51, 64);
+
+// Disk Map Table
+loadi (61, 2);
+
+// Inode Table+User Table
+loadi (59, 3);
+loadi (60, 4);
+
+// Initializing STATUS in Terminal Status Table as 0 to indicate free terminal
+[TERMINAL_STATUS_TABLE] = 0;
+// Initializing STATUS in Disk Status Table as 0
+[DISK_STATUS_TABLE] = 0;
+
+// Let the odd nos. program be INIT here
+
+PTBR = PAGE_TABLE_BASE + 20;
+PTLR = 10;
+
+// Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+// Heap
+[PTBR+4] = 78;
+[PTBR+5] = "0110";
+[PTBR+6] = 79;
+[PTBR+7] = "0110";
+
+// Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";
+[PTBR+10] = 66;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+// Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+// Process table for INIT starts from PT + 16
+[PROCESS_TABLE + 16 + 1] = 1;             // PID
+[PROCESS_TABLE + 16 + 4] = CREATED;       // INIT is not scheduled first
+[PROCESS_TABLE + 16 + 11] = 80;           // User Area Page
+[PROCESS_TABLE + 16 + 12] = 0;            // KPTR
+[PROCESS_TABLE + 16 + 13] = 8*512;        // UPTR
+[PROCESS_TABLE + 16 + 14] = PAGE_TABLE_BASE + 20;
+[PROCESS_TABLE + 16 + 15] = 10;
+
+[76*512] = [65*512 + 1];
+
+// Initializing memory free list - Free pages start from page 83
+alias i R1;
+i = 0;
+while(i<83) do
+        [MEMORY_FREE_LIST + i] = 1;
+        i = i + 1;
+endwhile;
+
+while(i<128) do
+        [MEMORY_FREE_LIST + i] = 0;
+        i = i + 1;
+endwhile;
+
+i = 0;
+while (i<10) do
+   [DISK_MAP_TABLE + 1*10 + i] = -1;
+   i = i+1;
+endwhile;
+[DISK_MAP_TABLE + 1*10 + 4] = 7;
+[DISK_MAP_TABLE + 1*10 + 5] = 8;
+
+[SYSTEM_STATUS_TABLE + 2] = 45;       // MEM_FREE_COUNT = No. of free pages = 128 - 83
+[SYSTEM_STATUS_TABLE + 3] = 0;        // WAIT_MEM_COUNT = Processes blocked for memory
+
+// Initializing per-process resource table of INIT process
+alias perProcess R2;
+perProcess = 80 * 512 + 496;          // 496 = 511 - 16 + 1, User Area Page
+while (perProcess < 81*512) do
+   [perProcess] = -1;
+   perProcess = perProcess + 1;
+endwhile;
+
+// Initializing Semaphore Table
+i = 0;
+while (i < MAX_SEM_COUNT) do
+   [SEMAPHORE_TABLE + i*4 + 0] = -1;    // Locking PID
+   [SEMAPHORE_TABLE + i*4 + 0] = 0;     // Process Count
+   i = i+1;
+endwhile;
+
+// Initializing STATE field of all other processes (14) as TERMINATED
+[PROCESS_TABLE + 2*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 3*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 4*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 5*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 6*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 7*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 8*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 9*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 10*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 11*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 12*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 13*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 14*16 + 4] = TERMINATED;
+[PROCESS_TABLE + 15*16 + 4] = TERMINATED;
+
+// To count
+[SYSTEM_STATUS_TABLE + 6] = 128-45;    // MAX MEM USAGE
+[SYSTEM_STATUS_TABLE + 7] = 0;         // DISK ACCESSES
+[TERMINAL_STATUS_TABLE + 2] = 0;       //CONTEXT SWITCHES
+
+return;

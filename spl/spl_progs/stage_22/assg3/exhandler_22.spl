@@ -1,0 +1,90 @@
+// Setting MODE flag to -1 for exception handler
+breakpoint;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 9] = -1;
+
+// Switching to kernel stack and pushing EIP to stack
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 11]*512 - 1;
+backup;
+multipush (EIP);
+
+// If cause of exception is other than page fault or user stack full, halt process
+alias userSP R0;
+userSP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 13];
+
+PTBR = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 14];
+PTLR = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 15];
+
+// print "Here";
+
+if (EC != 0 || userSP == ((PTLR*512) - 1)) then
+   // breakpoint;
+   if (userSP == ((PTLR*512) - 1)) then
+      print "Full stack";
+   endif;
+   // if (EC == 1) then
+      // print "Illegal inst"
+   // endif;
+   if (EC == 2) then
+      print "Illegal mem";
+   endif;
+   if (EC == 3) then
+      print "Arith exc";
+   endif;
+   // print EC;
+   // print EIP;
+   // print EPN;
+   // breakpoint;
+   
+   // Call Exit Process to halt and invoke Scheduler
+   multipush (R0, R1, R2, PTBR, PTLR);
+   R1 = 3;
+   R2 = [SYSTEM_STATUS_TABLE + 1];
+   call PROCESS_MANAGER;
+   call SCHEDULER;
+   multipop (R0, R1, R2, PTBR, PTLR);
+endif;
+
+// Page fault on EC = 0
+if (EC == 0) then
+   // print "correct";
+   if (EPN >= 4 && EPN < 8) then
+      // Case 1: Page fault caused by code pages
+      multipush (R0, R1, R2, PTBR, PTLR);
+      R1 = 5;                                                     // Get code page
+      R2 = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE+1]*10 + EPN];  // Code block number from DMT
+      call MEMORY_MANAGER;
+      [PTBR + EPN*2] = R0;
+      [PTBR + EPN*2 + 1] = "1100";
+      multipop (R0, R1, R2, PTBR, PTLR);
+   else
+      // Case 2: Page fault caused by heap (EPN == 2 || EPN == 3)
+      // print "heap err";
+      // breakpoint;
+      multipush (R0, R1, R2, PTBR, PTLR);
+      R1 = 1;                                        // Get free page
+      call MEMORY_MANAGER;
+      [PTBR + 4] = R0;
+      [PTBR + 5] = "1110";
+      R1 = 1;
+      call MEMORY_MANAGER;
+      [PTBR + 6] = R0;
+      [PTBR + 7] = "1110";
+      multipop (R0, R1, R2, PTBR, PTLR);
+   endif;
+endif;
+
+// Resetting MODE flag to 0, popping EIP and restoring registers
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 9] = 0;
+// print "alloted";
+// breakpoint;
+multipop (EIP);
+restore;
+
+// Changing back to user stack
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 13];
+SP = SP + 1;
+
+// Storing EIP to address pointed to by SP
+[[PTBR + 2 * (SP/512)]*512 + (SP % 512)] = EIP;
+ireturn;

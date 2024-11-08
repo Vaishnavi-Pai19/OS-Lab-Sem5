@@ -34,6 +34,7 @@ if (EC != 0 || userSP == ((PTLR*512) - 1)) then
    print EC;
    print EIP;
    print EPN;
+   breakpoint;
    
    // Call Exit Process to halt and invoke Scheduler
    multipush (R0, R1, R2, PTBR, PTLR);

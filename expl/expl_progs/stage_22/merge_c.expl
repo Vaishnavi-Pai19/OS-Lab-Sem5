@@ -54,9 +54,7 @@ List mergeSort(List top)
         x=exposcall("SemLock", semid);
         s=alloc();
         x=exposcall("SemUnLock", semid);
-
         pid=exposcall("Fork");
-
         //If Fork is not possible, do sequential
         if(pid==-1) then
           a=mergeSort(a);

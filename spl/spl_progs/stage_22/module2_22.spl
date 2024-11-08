@@ -4,6 +4,8 @@ alias functionNum R1;
 
 // ----------------------------------------- Get Free Page ---------------------------------------------------------- //
 if (functionNum == 1) then
+   print "free page";
+   breakpoint;
    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;   // Incrementing WAIT_MEM_COUNT
    while ([SYSTEM_STATUS_TABLE + 2] == 0) do                    // While memory is full
       [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 4] = WAIT_MEM;

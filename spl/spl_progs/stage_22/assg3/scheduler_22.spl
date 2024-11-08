@@ -1,0 +1,59 @@
+[TERMINAL_STATUS_TABLE + 2] = [TERMINAL_STATUS_TABLE + 2] + 1;
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+multipush(BP);
+
+alias pt_entry R1;
+pt_entry = PROCESS_TABLE + currentPID * 16;
+
+[pt_entry + 12] = SP % 512;         // Kernel stack pointer
+[pt_entry + 14] = PTBR;
+[pt_entry + 15] = PTLR;
+
+alias newPID R2;
+newPID = currentPID + 1;
+newPID = newPID % 16;
+while(newPID != currentPID) do
+	if(newPID!=0) then
+		if([PROCESS_TABLE + newPID*16 + 4] == READY)  then
+			break;
+		endif;
+        if([PROCESS_TABLE + newPID*16 + 4] == CREATED)  then
+            break;
+        endif;
+	endif;
+	newPID = newPID + 1;
+	newPID = newPID % 16;
+endwhile;
+
+if(newPID == currentPID) then
+	newPID = 0;        // Idle
+endif;
+
+alias new_pt R3;
+new_pt = PROCESS_TABLE + newPID*16;
+// print newPID;
+
+alias user_page R5;
+alias kptr R6;
+user_page = [new_pt + 11];
+kptr = [new_pt + 12];
+
+SP = user_page * 512 + kptr;
+PTBR = [new_pt + 14];
+PTLR = [new_pt + 15];
+
+[SYSTEM_STATUS_TABLE + 1] = newPID;
+ 
+if ([new_pt + 4] == CREATED) then
+   SP = [new_pt + 13];        // SP value overwritten by UPTR of new process
+   BP = [[new_pt + 11]*512];  // BP value set to beginning to user area page 
+   [new_pt + 4] = RUNNING;    // State of process as RUNNING
+   [new_pt + 9] = 0;          // MODE flag to 0
+   ireturn;
+endif;
+
+[new_pt + 4] = RUNNING;
+multipop(BP);
+return;
