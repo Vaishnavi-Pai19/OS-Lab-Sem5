@@ -1,0 +1,143 @@
+// Acquire Disk + Acquire Inode + Release Inode + Acquire Semaphore + Release Semaphore + Acquire Terminal + Release Terminal
+
+alias functionNum R1;
+alias currentPID R2;
+
+//--------------------------------- Acquire Disk - 3 ----------------------------------//
+if (functionNum == 3) then
+   while ([DISK_STATUS_TABLE] == 1) do
+      [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+      multipush (R1, R2);
+      call SCHEDULER;
+      multipop (R1, R2);
+   endwhile;
+   
+   [DISK_STATUS_TABLE] = 1;                    // Locking the disk by setting STATUS to 1
+   [DISK_STATUS_TABLE + 4] = currentPID;       
+   return;
+endif;
+
+//--------------------------------- Acquire Inode - 4 ---------------------------------//
+if (functionNum == 4) then
+   alias inodeNum R2;
+   alias currentPID R3;
+
+   while ([FILE_STATUS_TABLE + inodeNum*4] != -1) do
+      [PROCESS_TABLE + currentPID*16 + 4] = WAIT_FILE;
+      [PROCESS_TABLE + currentPID*16 + 5] = inodeNum;
+      multipush (R1, R2, R3);
+      call SCHEDULER;
+      multipop (R1, R2, R3);
+   endwhile;
+
+   if ([INODE_TABLE + inodeNum*16 + 1] == -1) then
+      R0 = -1;
+   else
+      [FILE_STATUS_TABLE + inodeNum*4 + 0] = currentPID;
+      R0 = 0;
+   endif;
+   return;
+endif;
+
+//--------------------------------- Release Inode - 5 ---------------------------------//
+if (functionNum == 5) then
+   alias inodeNum R2;
+   alias currentPID R3;
+
+   if ([FILE_STATUS_TABLE + inodeNum*4 + 0] == currentPID) then
+      [FILE_STATUS_TABLE + inodeNum*4 + 0] = -1;
+      alias counter R4;
+      counter = 0;
+      while (counter < MAX_PROC_NUM) do
+         if ([PROCESS_TABLE + (counter*16) + 4] == WAIT_FILE && [PROCESS_TABLE + (counter*16) + 5] == inodeNum) then
+               [PROCESS_TABLE + (counter*16) + 4] = READY;
+         endif;
+         counter = counter + 1;
+      endwhile;
+      R0 = 0;
+   else
+      R0 = -1;
+   endif;
+   return;
+endif;
+
+//--------------------------------- Acquire Semaphore - 6 -----------------------------//
+if (functionNum == 6) then
+   alias i R3;
+   i = 0;
+   while (i < MAX_SEM_COUNT && [SEMAPHORE_TABLE + i*4 + 1] != 0) do
+      i = i+1;
+   endwhile;
+
+   // print "semind";
+   // print i;
+   // breakpoint;
+
+   if (i == MAX_SEM_COUNT) then
+      R0 = -1;             // Returning -1 to indicate failure
+   else
+      [SEMAPHORE_TABLE + i*4 + 0] = -1;        // Locking PID
+      [SEMAPHORE_TABLE + i*4 + 1] = 1;         // Process Count
+      R0 = i;
+   endif;
+   return;
+endif;
+
+//--------------------------------- Release Semaphore - 7 -----------------------------//
+if (functionNum == 7) then
+   alias semInd R2;               // Passed as arguments
+   alias currentPID R3;
+   
+   // If semaphore is locked by current process, unlock semaphore, release it and wake up all other processes
+   if ([SEMAPHORE_TABLE + semInd*4 + 0] == currentPID) then
+      [SEMAPHORE_TABLE + semInd*4 + 0] = -1;                     // Unlocking semaphore before releasing
+      alias i R4;
+      i = 0;
+      while (i < 16) do
+         // Waking up all semaphores blocked by the semaphore
+         if ([PROCESS_TABLE + (i*16) + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + (i*16) + 5] == semInd) then
+            [PROCESS_TABLE + (i*16) + 4] = READY;
+            endif;
+            i = i + 1;
+      endwhile;
+      // Decrementing the Process Count of the semaphore
+      [SEMAPHORE_TABLE + semInd*4 + 1] = [SEMAPHORE_TABLE + semInd*4 + 1] - 1;
+   endif;
+   return;
+endif;
+
+//--------------------------------- Acquire Terminal - 8 ------------------------------//
+
+if (functionNum == 8) then
+   while ([TERMINAL_STATUS_TABLE] == 1) do                       // Terminal not free
+      [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
+      multipush (R1, R2);
+      call MOD_5;
+      multipop (R1, R2);
+   endwhile;
+
+   [TERMINAL_STATUS_TABLE] = 1;
+   [TERMINAL_STATUS_TABLE + 1] = currentPID;
+   return;
+endif;
+
+//--------------------------------- Release Terminal - 9 ------------------------------//
+
+if (functionNum == 9) then
+   if (currentPID != [TERMINAL_STATUS_TABLE+1]) then         // Process trying to release terminal without acquiring it
+      R0 = -1;         // Return value as unsuccessful
+      return;
+   else
+      [TERMINAL_STATUS_TABLE] = 0;
+      alias i R3;
+      i = 1;
+      while (i <= 15) do
+         if ([PROCESS_TABLE + i*16 + 4] == WAIT_TERMINAL) then
+            [PROCESS_TABLE + i*16 + 4] = READY;
+         endif;
+         i = i+1;
+      endwhile;        // Return value successful
+      R0 = 0;
+      return;
+   endif;
+endif;

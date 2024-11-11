@@ -1,0 +1,51 @@
+alias userSP R1;
+userSP = SP;
+
+alias pTable R2;
+pTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+[pTable+ 13] = SP;
+SP = [pTable + 11]*512 - 1;
+
+[pTable + 9] = 21;       // Shutdown system call
+
+// If current process not shell/INIT (PID = 1) or not root user (userID = 1), returning failure
+if ([pTable + 1] != 1 || [pTable + 3] != 1) then
+   [[PTBR + ((userSP - 1)/512)*2]*512 + ((userSP - 1)%512)] = 0;        
+   [pTable + 9] = 0;
+   SP = userSP;
+   ireturn;
+endif;
+
+// Committing changes made in inode table, root file and disk free list
+multipush (R1, R2);
+
+// Inode Table
+R1 = 1;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 59;      // Page number
+R4 = 3;       // Block number
+call DEVICE_MANAGER;
+
+// User Table
+R1 = 1;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 60;      // Page number
+R4 = 4;       // Block number
+call DEVICE_MANAGER;
+
+// Root File
+R1 = 1;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 62;      // Page number
+R4 = 5;       // Block number
+call DEVICE_MANAGER;
+
+// Disk Free List
+R1 = 1;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 61;      // Page number
+R4 = 2;       // Block number
+call DEVICE_MANAGER;
+
+multipop (R1, R2);
+halt;

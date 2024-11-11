@@ -1,0 +1,207 @@
+alias userSP R0;
+userSP = SP;
+
+alias currPID R12;
+currPID = [SYSTEM_STATUS_TABLE+1];
+[PROCESS_TABLE + currPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + (currPID*16) + 11]*512 - 1;
+
+alias sysCallNum R1;
+sysCallNum = [[PTBR + ((userSP - 5)/512)*2]*512 + ((userSP - 5)%512)];
+
+alias pTable R2;
+pTable = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE +1] * 16);
+[pTable + 9] = sysCallNum;                // Setting MODE flag to system call number
+
+// Extracting file name from user stack
+alias fileName R3;
+fileName = [[PTBR + ((userSP - 4)/512)*2]*512 + ((userSP - 4)%512)];
+
+// Return value
+alias returnVal R11;
+returnVal = [PTBR + ((userSP - 1)/512)*2]*512 + ((userSP - 1)%512);
+
+// ------------------------------------------------------------------ CREATE -------------------------------------------------------------- //
+if (sysCallNum == 1) then
+   // Extracting permission from user stack
+   alias perm R4;
+   perm = [[PTBR + ((userSP - 3)/512)*2]*512 + ((userSP - 3)%512)];
+
+   alias i R5;
+   i = 0;
+
+   // Checking if the file exists in inode table already
+   alias fileExists R6;
+   fileExists = 0;
+   while (i < MAX_FILE_NUM) do
+      if ([INODE_TABLE + i*16 + 1] == fileName) then
+         fileExists = 1;
+         break;
+      endif;
+      i = i+1;
+   endwhile;
+
+   // Returning 0 to indicate file already exists
+   if (fileExists == 1) then
+      [returnVal] = 0;        
+      [pTable + 9] = 0;
+      SP = userSP;
+      ireturn;
+   endif;
+   
+   // If doesn't exist, finding free entry in inode table
+   i = 0;
+   while (i < MAX_FILE_NUM) do
+      if ([INODE_TABLE + i*16 + 1] == -1) then
+         break;
+      endif;
+      i = i+1;
+   endwhile;
+   
+   // If inode table is full, returning -1 to indicate failure
+   if (i == MAX_FILE_NUM) then
+      [returnVal] = -1;        
+      [pTable + 9] = 0;
+      SP = userSP;
+      ireturn;
+   endif;
+   
+   alias inodeEntry R7;
+   inodeEntry = INODE_TABLE + i*16;
+   alias userID R8;
+   userID = [PROCESS_TABLE + (currPID*16) + 3];
+
+   // Setting up fields of the Inode Table entry
+   [inodeEntry + 0] = DATA;          // Type
+   [inodeEntry + 1] = fileName;      // Name
+   [inodeEntry + 2] = 0;             // Size
+   [inodeEntry + 3] = userID;        // Owner
+   [inodeEntry + 4] = perm;          // Permission
+   [inodeEntry + 8] = -1;            // Data blocks
+   [inodeEntry + 9] = -1;
+   [inodeEntry + 10] = -1;
+   [inodeEntry + 11] = -1;
+
+   // Setting up fields of root file entry
+   [ROOT_FILE + (i*8) + 0] = fileName;                  // Name
+   [ROOT_FILE + (i*8) + 1] = 0;                         // Size
+   [ROOT_FILE + (i*8) + 2] = DATA;                      // Type
+   [ROOT_FILE + (i*8) + 3] = [USER_TABLE + userID*2];   // Username
+   [ROOT_FILE + (i*8) + 4] = perm;                      // Permission
+
+   // Returning successfully
+   [returnVal] = 0;   
+   [pTable + 9] = 0;
+   SP = userSP;
+   ireturn;
+endif;
+
+// ------------------------------------------------------------------ DELETE -------------------------------------------------------------- //
+if (sysCallNum == 4) then
+   alias i R4;
+   i = 0;
+   
+   while (i < MAX_FILE_NUM) do
+      if ([INODE_TABLE + i*16 + 1] == fileName) then
+         break;
+      endif;
+      i = i+1;
+   endwhile;
+   
+   // If file doesn't exist, returns successfully
+   if (i == MAX_FILE_NUM) then
+      print "Doesn't exist";
+      [returnVal] = 0;   
+   else
+      // Starts process of deleting
+      alias inodeEntry R5;
+      inodeEntry = INODE_TABLE + i*16;
+
+      // If file is not a DATA file, returns unsuccessfully
+      if ([inodeEntry + 0] != DATA) then
+         [returnVal] = -1;   
+      else
+
+         // If permission is EXCLUSIVE, checking if it is not root user and that current user does not own file, returns unsuccessfully
+         if ([inodeEntry + 4] == EXCLUSIVE && currPID != 1 && [inodeEntry + 3] != [PROCESS_TABLE + currPID*16 + 3]) then
+            [returnVal] = -1;   
+         else
+            // Calling Acquire Inode to get lock
+            multipush (R0, R1, R2, R3, R4, R5, R12);
+            R1 = 4;
+            R2 = i;
+            R3 = currPID;
+            call RESOURCE_MANAGER;
+            multipop (R0, R1, R2, R3, R4, R5, R12);
+            
+            // Checking if file open count is -1, else releasing lock and returning -2 (ie. file is open)
+            if ([FILE_STATUS_TABLE + i*4 + 1] != -1) then
+               multipush (R0, R1, R2, R3, R4, R5, R12);
+               R1 = 5;
+               R2 = i;
+               R3 = currPID;
+               call RESOURCE_MANAGER;
+               multipop (R0, R1, R2, R3, R4, R5, R12);
+
+               [returnVal] = -2;   
+            else
+               // Checking disk blocks allocated to the file
+               alias blockNum R6;
+               blockNum = 0;
+               while (blockNum < 4) do
+                  if ([inodeEntry + 8 + blockNum] != -1) then
+                     // Resetting buffer table
+                     alias bufferIndex R7;
+                     bufferIndex = [inodeEntry + 8 + blockNum] % MAX_BUFFER;
+
+                     if ([BUFFER_TABLE + bufferIndex*4 + 0] == [inodeEntry + 8 + blockNum] && [BUFFER_TABLE + bufferIndex*4 + 1] == 1) then
+                        [BUFFER_TABLE + bufferIndex*4 + 1] = 0;
+                     endif;
+
+                     // Releasing block
+                     multipush (R0, R1, R2, R3, R4, R5, R6, R7, R12);
+                     R1 = 4;
+                     R2 = [inodeEntry + 8 + blockNum];
+                     R3 = currPID;
+                     call MEMORY_MANAGER;
+                     multipop (R0, R1, R2, R3, R4, R5, R6, R7, R12);
+                  endif;
+
+                  blockNum = blockNum + 1;
+               endwhile;
+
+               // Updating Inode Table entry
+               alias ind R8;
+               ind = 0;
+               while (ind < 16) do
+                  [inodeEntry + ind] = -1;
+                  ind = ind + 1;
+               endwhile;
+               
+               // Updating Root File
+               ind = 0;
+               while (ind < 8) do
+                  [ROOT_FILE + i*8 + ind] = -1;
+                  ind = ind + 1;
+               endwhile;
+
+               // Releasing lock on file by calling Release Lock 
+               multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R12);
+               R1 = 5;
+               R2 = i;
+               R3 = currPID;
+               call RESOURCE_MANAGER;
+               multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R12);
+               
+               // Returning successfully
+               print "Deleted";
+               [returnVal] = 0;
+            endif;
+         endif;
+      endif;
+   endif;
+endif;
+
+[pTable + 9] = 0;
+SP = userSP;
+ireturn;

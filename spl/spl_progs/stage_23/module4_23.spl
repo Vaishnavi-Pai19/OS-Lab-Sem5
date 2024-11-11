@@ -1,0 +1,102 @@
+// Disk Load + Terminal Write + Terminal Read
+
+alias functionNum R1;
+alias currentPID R2;
+// R3 contains word to be printed
+
+// --------------------------------------- Disk Store --------------------------------------------------- //
+if (functionNum == 1) then
+   alias pageNum R3;
+   alias blockNum R4;
+
+   multipush (R1, R2, R3, R4);
+   R1 = 3;
+   call RESOURCE_MANAGER;
+   multipop (R1, R2, R3, R4);
+
+   // Setting bits of the Disk Status Table
+   [DISK_STATUS_TABLE + 1] = 1;      // Store
+   [DISK_STATUS_TABLE + 2] = pageNum;
+   [DISK_STATUS_TABLE + 3] = blockNum;
+
+   store (pageNum, blockNum);
+
+   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+   multipush (R1, R2, R3, R4);
+   call SCHEDULER;
+   multipop (R1, R2, R3, R4);
+
+   return;
+endif;
+
+// --------------------------------------- Disk Load ---------------------------------------------------- //
+if (functionNum == 2) then
+   alias pageNum R3;
+   alias blockNum R4;
+   multipush (R1, R2, R3, R4);
+   R1 = 3;
+   call RESOURCE_MANAGER;
+   multipop (R1, R2, R3, R4);
+   // print "acquire done";
+   
+   // Setting bits of the Disk Status Table
+   [DISK_STATUS_TABLE] = 1;
+   [DISK_STATUS_TABLE + 1] = 0;      // Load
+   [DISK_STATUS_TABLE + 2] = pageNum;
+   [DISK_STATUS_TABLE + 3] = blockNum;
+   [DISK_STATUS_TABLE + 4] = currentPID;
+   
+   // print pageNum; 
+   // print blockNum;
+   load (pageNum, blockNum);
+   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
+   
+   multipush (R1, R2, R3, R4);
+   call SCHEDULER;
+   multipop (R1, R2, R3, R4);
+   // print "out of sched";
+   return;
+endif;
+
+// --------------------------------------- Terminal Write ----------------------------------------------- //
+if (functionNum == 3) then
+   // Calling acquire terminal
+   multipush (R1, R2, R3);
+   R1 = 8;
+   R2 = [SYSTEM_STATUS_TABLE + 1];         // Or directly currentPID
+   call MOD_0;
+   multipop (R1, R2, R3);
+   print R3;
+
+   // Calling release terminal
+   multipush (R1, R2, R3);
+   R1 = 9;
+   R2 = currentPID;
+   call MOD_0;
+   multipop (R1, R2, R3);
+   return;
+endif;
+
+// --------------------------------------- Terminal Read ------------------------------------------------ //
+if (functionNum == 4) then
+   // Calling acquire terminal
+   multipush (R1, R2, R3);
+   R1 = 8;
+   R2 = [SYSTEM_STATUS_TABLE + 1];         // Or directly currentPID
+   call MOD_0;
+   multipop (R1, R2, R3);
+   read;
+   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
+
+   // Invoking Context Switch
+   multipush (R1, R2, R3);
+   call MOD_5;
+   multipop (R1, R2, R3);
+
+   alias wordAddr R4;
+   wordAddr = [PTBR + (2 * R3/512)] * 512 + R3%512;
+   [wordAddr] = [PROCESS_TABLE + (currentPID*16) + 8];
+   return;
+else
+   return;
+endif;
