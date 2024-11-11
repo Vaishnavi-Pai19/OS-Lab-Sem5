@@ -4,7 +4,7 @@ int main() {
       int temp;
    enddecl
    begin
-      temp = exposcall("Write", -2, "To del"); 
+      temp = exposcall("Write", -2, "Enter file"); 
       temp = exposcall("Read", -1, fileName);
       temp = exposcall("Delete", fileName);
       temp = exposcall("Write", -2, temp);
