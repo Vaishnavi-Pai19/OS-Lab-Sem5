@@ -23,7 +23,7 @@ if (EC != 0 || userSP == ((PTLR*512) - 1)) then
       print "Full stack";
    endif;
    // if (EC == 1) then
-      // print "Illegal inst"
+      // print "Illegal inst";
    // endif;
    if (EC == 2) then
       print "Illegal mem";

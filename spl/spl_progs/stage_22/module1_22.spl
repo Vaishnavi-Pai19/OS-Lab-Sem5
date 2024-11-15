@@ -35,10 +35,10 @@ if (functionNum == 2) then
 
    alias i R4;
    alias resourceTableBase R5;
-   i = RESOURCE_TABLE_OFFSET;                       // 496
+   i = 0;
    resourceTableBase = userAreaPage*512 + RESOURCE_TABLE_OFFSET;
 
-   while (i < 512) do 
+   while (i < 16) do 
       if ([resourceTableBase + i] == 1) then
          multipush (R1, R2, R3, R4, R5);
          R1 = 7;                                    // Release Semaphore

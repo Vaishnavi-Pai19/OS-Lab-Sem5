@@ -1,4 +1,4 @@
-MOV R16, "mem acc"
+MOV R16, "Mem Acc"
 PORT P1, R16
 OUT
 MOV R16, 29560
@@ -6,7 +6,7 @@ ADD R16, 6
 MOV R16, [R16]
 PORT P1, R16
 OUT
-MOV R16, "ker sw"
+MOV R16, "Ker Sw"
 PORT P1, R16
 OUT
 MOV R16, 29560
@@ -15,7 +15,7 @@ MOV R16, [R16]
 ADD R16, 1
 PORT P1, R16
 OUT
-MOV R16, "context sw"
+MOV R16, "Context Sw"
 PORT P1, R16
 OUT
 MOV R16, 29568

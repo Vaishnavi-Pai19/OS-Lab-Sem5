@@ -13,7 +13,7 @@ load --int=15 ../spl/spl_progs/stage_22/assg3/int15_22.xsm
 load --int=timer $HOME/myexpos/spl/spl_progs/timer_14.xsm
 load --os $HOME/myexpos/spl/spl_progs/os_startup_14.xsm
 load --module 0 ../spl/spl_progs/stage_22/module0_22.xsm
-load --module 1 ../spl/spl_progs/stage_22/assg3/module1.xsm
+load --module 1 ../spl/spl_progs/stage_22/module1_22.xsm
 load --module 2 ../spl/spl_progs/stage_19/module2_19.xsm
 load --module 4 ../spl/spl_progs/stage_19/module4_19.xsm
 load --module 5 ../spl/spl_progs/stage_22/assg3/scheduler_22.xsm
@@ -25,4 +25,3 @@ load --exec ../expl/expl_progs/stage_22/parent.xsm
 load --exec ../expl/expl_progs/stage_22/child.xsm
 load --exec ../expl/expl_progs/stage_22/merge_s.xsm
 load --exec ../expl/expl_progs/stage_22/merge_c.xsm
-load --exec ../expl/expl_progs/stage_22/merge.xsm
